@@ -1,26 +1,24 @@
-FROM node:20-alpine AS build
-
-# Ajouter cette ligne
-RUN apk add --no-cache openssl1.1-compat
+# Étape build (Debian, pas Alpine)
+FROM node:20 AS build
 
 WORKDIR /app
 
+# Dépendances backend
 COPY package*.json ./
 COPY prisma ./prisma
 RUN npm ci --omit=dev
 
+# Code backend
 COPY . .
 RUN npx prisma generate
 
-
-FROM node:20-alpine AS runtime
-
-# Ajouter cette ligne aussi dans le runtime
-RUN apk add --no-cache openssl1.1-compat
+# Étape runtime
+FROM node:20 AS runtime
 
 WORKDIR /app
 ENV NODE_ENV=production
 
+# On récupère tout du build (code + node_modules + prisma)
 COPY --from=build /app .
 
 EXPOSE 5000
