@@ -1,27 +1,31 @@
 FROM node:20-alpine AS build
+
 WORKDIR /app
 
-# 1) Copier les fichiers du backend AVANT npm ci
+# Copier les fichiers nécessaires pour installer les deps
 COPY package*.json ./
+COPY prisma ./prisma
+
+# Installer les dépendances (prod uniquement) :
+# le postinstall Prisma tourne ici, et trouve bien prisma/schema.prisma
+RUN npm ci --omit=dev
+
+# Copier le reste du code du backend
 COPY . .
 
-# 2) Installer les deps (postinstall Prisma verra déjà prisma/schema.prisma)
-RUN npm ci
+# (Optionnel, si tu as un build TypeScript ou autre)
+# RUN npm run build
 
-# 3) (Optionnel) générer Prisma explicitement
+# Générer explicitement le client Prisma (si besoin)
 RUN npx prisma generate
-
-# 4) Nettoyer les deps de build
-RUN rm -rf node_modules
 
 
 FROM node:20-alpine AS runtime
+
 WORKDIR /app
 ENV NODE_ENV=production
 
-COPY package*.json ./
-RUN npm ci --omit=dev
-
+# On récupère le code + node_modules + prisma généré depuis l'étape build
 COPY --from=build /app .
 
 EXPOSE 5000
