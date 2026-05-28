@@ -1,10 +1,11 @@
 FROM node:20-alpine AS build
 WORKDIR /app
+
 COPY package*.json ./
-RUN npm ci
+# npm install est moins strict que npm ci sur le package-lock
+RUN npm install
+
 COPY . .
-ARG VITE_API_URL=/api
-ENV VITE_API_URL=$VITE_API_URL
 RUN npm run build
 
 FROM nginx:stable-alpine AS runtime
