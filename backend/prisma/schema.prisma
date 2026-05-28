@@ -1,0 +1,56 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+}
+
+model Order {
+  id      Int    @id @default(autoincrement())
+  client  String
+  amount  Float
+  status  String
+  image   String?   // ✅ AJOUTE ?
+}
+
+model Claim {
+  id        Int      @id @default(autoincrement())
+  orderId   Int
+  reason    String
+  status    String
+  createdAt DateTime @default(now())
+}
+
+model Proof {
+  id        Int      @id @default(autoincrement())
+  imageUrl  String
+  hash      String
+  createdAt DateTime @default(now())
+}
+
+/// Uber Eats proof photo: receipt + order in one shot (ProofCam page).
+model ProofCamScan {
+  id           Int      @id @default(autoincrement())
+  imageUrl     String
+  processedUrl String?
+  ticketNumber String?
+  customerName String?
+  originalName String?
+  rawText      String?  @db.Text
+  status       String   @default("processing")
+  createdAt    DateTime @default(now())
+
+  @@index([ticketNumber])
+  @@index([createdAt])
+  @@index([status])
+}

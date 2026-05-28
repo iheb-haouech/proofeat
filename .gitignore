@@ -1,0 +1,14 @@
+node_modules
+.env
+dist
+.build
+coverage
+
+# Dossier d'uploads (images générées, tickets, etc.)
+backend/uploads/
+
+# Clés et secrets
+*.pem
+*.key
+*.pub
+.ssh/
