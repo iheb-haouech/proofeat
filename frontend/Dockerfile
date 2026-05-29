@@ -1,6 +1,10 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 
+# permettre de passer VITE_API_URL en argument
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
+
 COPY package*.json ./
 # npm install est moins strict que npm ci sur le package-lock
 RUN npm install

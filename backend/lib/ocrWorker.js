@@ -1,75 +1,52 @@
-const { createWorker } = require("tesseract.js");
-const { buildReceiptCrop } = require("./receiptCrop");
-const {
-  extractTicketNumber,
-  extractCustomerName,
-} = require("./ticketExtract");
+// backend/lib/ocrWorker.js
+const fs = require("fs");
+const axios = require("axios");
+const FormData = require("form-data");
 
-let worker = null;
-let initPromise = null;
-
-function getWorker() {
-  if (!initPromise) {
-    initPromise = (async () => {
-      console.log("[OCR] Loading engine (one-time)...");
-      worker = await createWorker("eng", 1, {
-        logger: () => {},
-      });
-      await worker.setParameters({
-        tessedit_pageseg_mode: "6",
-        tessedit_char_whitelist:
-          "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789#.- ",
-      });
-      console.log("[OCR] Ready");
-      return worker;
-    })();
-  }
-  return initPromise;
-}
+const OCR_URL = process.env.OCR_URL || "http://ocr:8000";
 
 async function warmupOcr() {
-  await getWorker();
+  try {
+    await axios.get(`${OCR_URL}/health`, { timeout: 3000 });
+    console.log("[OCR] Ready");
+  } catch (e) {
+    console.warn("[OCR] warmup failed:", e.message);
+  }
 }
 
 /**
- * Run OCR on receipt crop; early exit when ticket # found.
+ * @param {string} inputPath chemin complet du fichier image (dans backend/uploads)
+ * @returns {Promise<{ticketNumber: string|null, customerName: string|null, processedPath: string|null, text: string}>}
  */
 async function readTicketFromImage(inputPath) {
-  const w = await getWorker();
-  const cropPath = await buildReceiptCrop(inputPath);
+  const form = new FormData();
+  form.append("file", fs.createReadStream(inputPath));
 
-  const paths = [cropPath, inputPath];
-  let bestText = "";
-  let bestPath = cropPath;
-  let bestTicket = null;
+  try {
+    const res = await axios.post(`${OCR_URL}/extract-order`, form, {
+      headers: form.getHeaders(),
+      timeout: 15000,
+    });
 
-  for (const p of paths) {
-    const { data } = await w.recognize(p);
-    const text = data.text || "";
-    const ticket = extractTicketNumber(text);
-
-    if (ticket) {
-      return {
-        text,
-        ticketNumber: ticket,
-        customerName: extractCustomerName(text, ticket),
-        processedPath: p === inputPath ? null : p,
-      };
-    }
-
-    if (text.trim().length > bestText.trim().length) {
-      bestText = text;
-      bestPath = p;
-    }
+    // Le service Python renvoie { ticketNumber, customerName, processedPath, text }
+    return {
+      ticketNumber: res.data.ticketNumber || null,
+      customerName: res.data.customerName || null,
+      processedPath: res.data.processedPath || null,
+      text: res.data.text || "",
+    };
+  } catch (err) {
+    console.error("[OCR] error:", err.response?.data || err.message);
+    return {
+      ticketNumber: null,
+      customerName: null,
+      processedPath: null,
+      text: "",
+    };
   }
-
-  const ticketNumber = extractTicketNumber(bestText);
-  return {
-    text: bestText,
-    ticketNumber,
-    customerName: extractCustomerName(bestText, ticketNumber),
-    processedPath: bestPath !== inputPath ? bestPath : null,
-  };
 }
 
-module.exports = { warmupOcr, readTicketFromImage, getWorker };
+module.exports = {
+  warmupOcr,
+  readTicketFromImage,
+};

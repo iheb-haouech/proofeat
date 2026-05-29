@@ -10,6 +10,11 @@ services:
       - db_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+  ocr:
+    build:
+      context: ./ocr_service
+      dockerfile: Dockerfile
+    restart: unless-stopped
 
   backend:
     build:
@@ -20,8 +25,10 @@ services:
       PORT: 5000
       JWT_SECRET: "${JWT_SECRET:-dev-secret-change-me}"
       DATABASE_URL: "postgresql://proofeat:proofeat_password@db:5432/proofeat?schema=public"
+      OCR_URL: "http://ocr:8000"
     depends_on:
       - db
+      - ocr
     ports:
       - "5000:5000"
     volumes:
