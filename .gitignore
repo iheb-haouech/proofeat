@@ -1,14 +1,29 @@
-node_modules
-.env
-dist
-.build
-coverage
+# Python
+.venv/
+**/__pycache__/
+*.pyc
 
-# Dossier d'uploads (images générées, tickets, etc.)
+# OCR artifacts
+ocr_service/.venv/
+ocr_service/__pycache__/
+ocr_service/debug/
+ocr_service/raw_images/
+ocr_service/dataset/
+ocr_service/*.pt
+ocr_service/yolov8n.pt
+
+# Backend generated files
+backend/processed/
 backend/uploads/
 
-# Clés et secrets
-*.pem
-*.key
-*.pub
-.ssh/
+# Training / run artifacts
+runs/
+
+# OS / editor
+.DS_Store
+
+node_modules/
+key github
+key github.pub
+*.log
+.env

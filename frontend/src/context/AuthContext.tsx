@@ -9,14 +9,24 @@ import {
 } from "react";
 import { api } from "../api";
 
-type User = { id: number; email: string };
+type User = {
+  id: number;
+  email: string;
+  name?: string | null;
+  role: "SUPERADMIN" | "ADMIN" | "CLIENT";
+};
+
+type AuthResponse = {
+  token: string;
+  user: User;
+};
 
 type AuthContextValue = {
   user: User | null;
   token: string | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<AuthResponse>;
+  register: (email: string, password: string) => Promise<AuthResponse>;
   logout: () => void;
 };
 
@@ -33,6 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const t = localStorage.getItem(TOKEN_KEY);
     const u = localStorage.getItem(USER_KEY);
+
     if (t && u) {
       setToken(t);
       try {
@@ -41,6 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem(USER_KEY);
       }
     }
+
     setLoading(false);
   }, []);
 
@@ -52,17 +64,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = useCallback(
-    async (email: string, password: string) => {
+    async (email: string, password: string): Promise<AuthResponse> => {
       const res = await api.post("/auth/login", { email, password });
       persist(res.data.token, res.data.user);
+      return res.data;
     },
     [persist]
   );
 
   const register = useCallback(
-    async (email: string, password: string) => {
+    async (email: string, password: string): Promise<AuthResponse> => {
       const res = await api.post("/auth/register", { email, password });
       persist(res.data.token, res.data.user);
+      return res.data;
     },
     [persist]
   );

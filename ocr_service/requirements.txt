@@ -1,7 +1,16 @@
 fastapi
 uvicorn[standard]
 opencv-python-headless
+paddleocr
+paddlepaddle==3.3.1
 pytesseract
 numpy
 Pillow
 python-multipart
+pandas
+openpyxl
+rapidfuzz
+unidecode
+openai
+llama-cpp-python
+ultralytics

@@ -1,7 +1,23 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { api, API_BASE } from "../api";
+import { useAuth } from "../context/AuthContext";
 import { compressImage } from "../utils/compressImage";
 import "../styles/proofcam.css";
+
+type ParsedItem = {
+  name: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+};
+
+type ParsedData = {
+  phoneNumber?: string | null;
+  ticketDate?: string | null;
+  totalAmount?: number | null;
+  items?: ParsedItem[];
+};
 
 type ScanItem = {
   id: string;
@@ -12,14 +28,20 @@ type ScanItem = {
   status?: string;
   createdAt: string;
   originalName?: string | null;
+  rawText?: string | null;
+  parsedData?: ParsedData;
+  scannedBy?: string | null;
 };
 
 export default function ProofCam() {
+  const { user } = useAuth();
+  const canSeePrices = user?.role === "ADMIN";
   const [items, setItems] = useState<ScanItem[]>([]);
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [error, setError] = useState("");
+  const [systemStatus, setSystemStatus] = useState<{ ok: boolean; message: string } | null>(null);
   const [search, setSearch] = useState("");
   const fileRef = useRef<HTMLInputElement | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -33,12 +55,23 @@ export default function ProofCam() {
     }
   }, []);
 
+  const loadSystemStatus = useCallback(async () => {
+    try {
+      const res = await api.get<{ ok: boolean; ocr: unknown; modelHealth: unknown }>("/health");
+      const message = res.data.ok ? "OCR service disponible" : "OCR service indisponible";
+      setSystemStatus({ ok: res.data.ok, message });
+    } catch {
+      setSystemStatus({ ok: false, message: "Échec de la connexion au service OCR" });
+    }
+  }, []);
+
   useEffect(() => {
     loadItems();
+    loadSystemStatus();
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
-  }, [loadItems]);
+  }, [loadItems, loadSystemStatus]);
 
   useEffect(() => {
     const hasProcessing = items.some((i) => i.status === "processing");
@@ -83,21 +116,26 @@ export default function ProofCam() {
 
   const confirmUpload = async () => {
     if (!selectedFile) return;
+
     setUploading(true);
     setError("");
+
     try {
       const compressed = await compressImage(selectedFile);
       const form = new FormData();
-      form.append("image", compressed);
+      form.append("file", compressed, compressed.name);
+
       const res = await api.post<ScanItem>("/proofcam/upload", form, {
         headers: { "Content-Type": "multipart/form-data" },
       });
+
       setItems((prev) => [res.data, ...prev]);
       setSelectedFile(null);
       setPreviewUrl((prev) => {
         if (prev) URL.revokeObjectURL(prev);
         return "";
       });
+
       if (fileRef.current) fileRef.current.value = "";
     } catch (err: unknown) {
       const msg =
@@ -112,9 +150,23 @@ export default function ProofCam() {
         "message" in err.response.data
           ? String((err.response.data as { message?: string }).message)
           : "Échec de l'envoi. Vérifiez que le serveur tourne.";
+
       setError(msg);
     } finally {
       setUploading(false);
+    }
+  };
+
+  const deleteScan = async (id: string) => {
+    if (!window.confirm("Supprimer ce ticket scanné ? Cette action est irréversible.")) {
+      return;
+    }
+
+    try {
+      await api.delete(`/proofcam/${id}`);
+      setItems((prev) => prev.filter((item) => item.id !== id));
+    } catch {
+      setError("Impossible de supprimer le ticket. Réessayez plus tard.");
     }
   };
 
@@ -138,6 +190,13 @@ export default function ProofCam() {
         </div>
       </div>
 
+      <div className="proofcam-card health-card">
+        <h2>Statut du service</h2>
+        <div className={systemStatus?.ok ? "alert ok" : "alert error"}>
+          {systemStatus ? systemStatus.message : "Vérification du service OCR..."}
+        </div>
+      </div>
+
       <div className="proofcam-card upload-card">
         <h2>Scanner un ticket</h2>
         <p className="muted">Caméra ou fichier — image compressée pour un envoi plus rapide.</p>
@@ -151,6 +210,7 @@ export default function ProofCam() {
           >
             Choisir / caméra
           </button>
+
           <button
             type="button"
             className="btn-primary"
@@ -159,6 +219,7 @@ export default function ProofCam() {
           >
             {uploading ? "Envoi…" : "Confirmer l'envoi"}
           </button>
+
           <input
             ref={fileRef}
             type="file"
@@ -170,11 +231,13 @@ export default function ProofCam() {
         </div>
 
         {error && <div className="alert error">{error}</div>}
+
         {uploading && (
           <div className="alert info">
             Envoi de l&apos;image… La lecture du ticket continue en arrière-plan.
           </div>
         )}
+
         {selectedFile && !uploading && (
           <div className="alert ok">Sélectionné : {selectedFile.name}</div>
         )}
@@ -207,46 +270,75 @@ export default function ProofCam() {
                 <th>Photo</th>
                 <th>Ticket</th>
                 <th>Client</th>
+                <th>Total</th>
                 <th>Date</th>
-                <th>Télécharger</th>
+                <th>Actions</th>
               </tr>
             </thead>
+
             <tbody>
               {filteredItems.map((item) => (
-                <tr key={item.id} className={item.status === "processing" ? "row-processing" : ""}>
-                  <td data-label="Photo">
-                    <img
-                      src={downloadUrl(item.imageUrl)}
-                      alt="Ticket"
-                      className="table-thumb"
-                      loading="lazy"
-                    />
-                  </td>
-                  <td data-label="Ticket">
-                    <strong className={item.status === "processing" ? "processing" : ""}>
-                      {ticketLabel(item)}
-                    </strong>
-                  </td>
-                  <td data-label="Client">
-                    {item.status === "processing"
-                      ? "…"
-                      : item.customerName ?? "—"}
-                  </td>
-                  <td data-label="Date">{new Date(item.createdAt).toLocaleString()}</td>
-                  <td data-label="Télécharger">
-                    <a
-                      href={downloadUrl(item.imageUrl)}
-                      download={item.originalName ?? "ticket.jpg"}
-                      className="download-link"
-                    >
-                      Télécharger
-                    </a>
-                  </td>
-                </tr>
+                <Fragment key={item.id}>
+                  <tr className={item.status === "processing" ? "row-processing" : ""}>
+                    <td data-label="Photo">
+                      <img
+                        src={downloadUrl(item.imageUrl)}
+                        alt="Ticket"
+                        className="table-thumb"
+                        loading="lazy"
+                      />
+                    </td>
+
+                    <td data-label="Ticket">
+                      <div>
+                        <strong className={item.status === "processing" ? "processing" : ""}>
+                          {ticketLabel(item)}
+                        </strong>
+                      </div>
+                    </td>
+
+                    <td data-label="Client">
+                      {item.status === "processing" ? "…" : item.customerName ?? "—"}
+                    </td>
+
+                    <td data-label="Total">
+                      {canSeePrices && item.parsedData?.totalAmount != null
+                        ? `${item.parsedData.totalAmount.toFixed(2)}€`
+                        : "—"}
+                    </td>
+
+                    <td data-label="Date">{new Date(item.createdAt).toLocaleString()}</td>
+
+                    <td data-label="Actions">
+                      <div className="action-buttons">
+                        <Link to={`/proofcam/${item.id}`} className="download-link">
+                          Détails
+                        </Link>
+
+                        <a
+                          href={downloadUrl(item.imageUrl)}
+                          download={item.originalName ?? "ticket.jpg"}
+                          className="download-link"
+                        >
+                          Télécharger
+                        </a>
+
+                        <button
+                          type="button"
+                          className="btn-secondary btn-small"
+                          onClick={() => deleteScan(item.id)}
+                        >
+                          Supprimer
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </Fragment>
               ))}
+
               {!filteredItems.length && (
                 <tr>
-                  <td colSpan={5} className="muted-cell">
+                  <td colSpan={6} className="muted-cell">
                     Aucun scan pour le moment.
                   </td>
                 </tr>

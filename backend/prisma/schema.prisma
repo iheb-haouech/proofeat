@@ -5,22 +5,33 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
 
+enum UserRole {
+  SUPERADMIN
+  ADMIN
+  CLIENT
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  password  String
-  createdAt DateTime @default(now())
+  id                       Int                  @id @default(autoincrement())
+  email                    String               @unique
+  password                 String
+  name                     String?
+  role                     UserRole             @default(CLIENT)
+  createdAt                DateTime             @default(now())
+  proofCamScans            ProofCamScan[]
+  createdInventoryProducts InventoryProduct[]   @relation("CreatedInventoryProducts")
+  inventoryUsages          InventoryUsage[]     @relation("InventoryUsagesByUser")
+  stockInvoiceBackups      StockInvoiceBackup[]
 }
 
 model Order {
-  id      Int    @id @default(autoincrement())
-  client  String
-  amount  Float
-  status  String
-  image   String?   // ✅ AJOUTE ?
+  id     Int     @id @default(autoincrement())
+  client String
+  amount Float
+  status String
+  image  String? // ✅ AJOUTE ?
 }
 
 model Claim {
@@ -40,17 +51,92 @@ model Proof {
 
 /// Uber Eats proof photo: receipt + order in one shot (ProofCam page).
 model ProofCamScan {
-  id           Int      @id @default(autoincrement())
+  id           Int       @id @default(autoincrement())
   imageUrl     String
   processedUrl String?
   ticketNumber String?
   customerName String?
+  phoneNumber  String?
+  ticketDate   DateTime?
+  totalAmount  Float?
+  parsedData   Json?
+  userId       Int?
+  user         User?     @relation(fields: [userId], references: [id])
   originalName String?
-  rawText      String?  @db.Text
-  status       String   @default("processing")
-  createdAt    DateTime @default(now())
+  rawText      String?   @db.Text
+  status       String    @default("processing")
+  createdAt    DateTime  @default(now())
 
   @@index([ticketNumber])
   @@index([createdAt])
   @@index([status])
+  @@index([userId])
+}
+
+enum StockUnit {
+  CARTON
+  KG
+}
+
+model InventoryProduct {
+  id             Int                  @id @default(autoincrement())
+  name           String
+  price          Float
+  stockQuantity  Float                @default(0)
+  stockUnit      StockUnit
+  alertThreshold Float
+  createdById    Int?
+  createdBy      User?                @relation("CreatedInventoryProducts", fields: [createdById], references: [id])
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  usages         InventoryUsage[]
+  alerts         StockAlert[]
+  invoiceBackups StockInvoiceBackup[]
+
+  @@index([name])
+}
+
+model InventoryUsage {
+  id        Int       @id @default(autoincrement())
+  productId Int
+  storeId   Int
+  quantity  Float
+  unit      StockUnit
+  createdAt DateTime  @default(now())
+
+  product InventoryProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+  store   User             @relation("InventoryUsagesByUser", fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([storeId])
+  @@index([createdAt])
+}
+
+model StockAlert {
+  id        Int      @id @default(autoincrement())
+  productId Int
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  product InventoryProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+model StockInvoiceBackup {
+  id                 Int               @id @default(autoincrement())
+  imageUrl           String
+  originalName       String?
+  amount             Decimal?          @db.Decimal(10, 2)
+  uploadedById       Int?
+  uploadedBy         User?             @relation(fields: [uploadedById], references: [id])
+  createdAt          DateTime          @default(now())
+  InventoryProduct   InventoryProduct? @relation(fields: [inventoryProductId], references: [id])
+  inventoryProductId Int?
+
+  @@index([uploadedById])
+  @@index([createdAt])
 }

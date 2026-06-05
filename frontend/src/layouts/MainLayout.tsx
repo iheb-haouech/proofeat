@@ -2,6 +2,7 @@ import { useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import "./layout.css";
+import { Link } from "react-router-dom";
 
 const nav = [
   { to: "/dashboard", label: "Tableau de bord" },
@@ -59,6 +60,7 @@ export default function MainLayout() {
         </nav>
 
         <div className="sidebar-footer">
+          
           <p className="user-email">{user?.email}</p>
           <button type="button" className="btn-logout" onClick={onLogout}>
             Déconnexion
@@ -70,6 +72,7 @@ export default function MainLayout() {
         <header className="topbar">
           <h3>ProofEat</h3>
           <span className="topbar-user">{user?.email}</span>
+          <Link to="/profile">Mon profil</Link>
         </header>
 
         <div className="page-content">

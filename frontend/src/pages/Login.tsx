@@ -4,22 +4,31 @@ import { useAuth } from "../context/AuthContext";
 import "../styles/auth.css";
 
 export default function Login() {
-  const { login, token } = useAuth();
+  const { login, token, user  } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  if (token) return <Navigate to="/dashboard" replace />;
+if (token) {
+  if (user?.role === "SUPERADMIN") {
+    return <Navigate to="/superadmin" replace />;
+  }
+  return <Navigate to="/dashboard" replace />;
+}
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
-      await login(email.trim(), password);
-      navigate("/dashboard");
+      const result = await login(email.trim(), password);
+      if (result.user.role === "SUPERADMIN") {
+          navigate("/superadmin");
+        } else {
+          navigate("/dashboard");
+        }
     } catch (err: unknown) {
       const msg =
         err &&
