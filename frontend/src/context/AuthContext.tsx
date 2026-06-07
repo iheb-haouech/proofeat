@@ -1,7 +1,6 @@
 import {
   createContext,
   useCallback,
-  useContext,
   useEffect,
   useMemo,
   useState,
@@ -30,7 +29,7 @@ type AuthContextValue = {
   logout: () => void;
 };
 
-const AuthContext = createContext<AuthContextValue | null>(null);
+export const AuthContext = createContext<AuthContextValue | null>(null);
 
 const TOKEN_KEY = "token";
 const USER_KEY = "user";
@@ -63,23 +62,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(u);
   }, []);
 
-  const login = useCallback(
-    async (email: string, password: string): Promise<AuthResponse> => {
-      const res = await api.post("/auth/login", { email, password });
-      persist(res.data.token, res.data.user);
-      return res.data;
-    },
-    [persist]
-  );
+  const login = useCallback(async (email: string, password: string): Promise<AuthResponse> => {
+    const res = await api.post("/auth/login", { email, password });
+    persist(res.data.token, res.data.user);
+    return res.data;
+  }, [persist]);
 
-  const register = useCallback(
-    async (email: string, password: string): Promise<AuthResponse> => {
-      const res = await api.post("/auth/register", { email, password });
-      persist(res.data.token, res.data.user);
-      return res.data;
-    },
-    [persist]
-  );
+  const register = useCallback(async (email: string, password: string): Promise<AuthResponse> => {
+    const res = await api.post("/auth/register", { email, password });
+    persist(res.data.token, res.data.user);
+    return res.data;
+  }, [persist]);
 
   const logout = useCallback(() => {
     localStorage.removeItem(TOKEN_KEY);
@@ -94,10 +87,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
-  return ctx;
 }

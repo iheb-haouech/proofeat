@@ -2,6 +2,7 @@
   "dependencies": {
     "@nestjs/jwt": "^11.0.2",
     "axios": "^1.15.2",
-    "bcrypt": "^6.0.0"
+    "bcrypt": "^6.0.0",
+    "node-cron": "^4.2.1"
   }
 }
