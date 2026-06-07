@@ -140,3 +140,32 @@ model StockInvoiceBackup {
   @@index([uploadedById])
   @@index([createdAt])
 }
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  title     String
+  message   String
+  role      UserRole?
+  isRead    Boolean  @default(false)
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([role])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+model DatasetRelease {
+  id             Int      @id @default(autoincrement())
+  kind           String   @default("proofcam")
+  csvPath        String?
+  jsonPath       String?
+  availableFrom  DateTime
+  availableUntil DateTime
+  isActive       Boolean  @default(true)
+  metadata       Json?
+  createdAt      DateTime @default(now())
+
+  @@index([kind, isActive])
+  @@index([availableUntil])
+}
