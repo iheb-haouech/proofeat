@@ -2,9 +2,9 @@
 const fs = require("fs");
 const axios = require("axios");
 const FormData = require("form-data");
-const { buildReceiptCrops } = require("./receiptcrop");
+const { buildReceiptCrops } = require("./receiptCrop");
 const path = require("path");
-const OCR_URL = "http://127.0.0.1:8000";
+const OCR_URL = process.env.OCR_URL || "http://127.0.0.1:8000";
 
 async function warmupOcr() {
   try {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { api, API_BASE } from "../api";
 import { useAuth } from "../hooks/useAuth";
 import "../styles/proofcam.css";
@@ -36,7 +36,6 @@ export default function ProofCamDetail() {
   const { user } = useAuth();
   const canSeePrices = user?.role === "ADMIN";
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const [item, setItem] = useState<ScanItem | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);

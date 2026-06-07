@@ -42,9 +42,11 @@ services:
     restart: unless-stopped
     ports:
       - "80:80"
+      - "443:443"
     depends_on:
       - backend
-
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt:ro
 volumes:
   db_data:
   backend_uploads:

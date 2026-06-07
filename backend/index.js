@@ -18,6 +18,7 @@ const usersRouter = require("./routes/users");
 const { requireAuth } = require("./middleware/auth");
 
 const prisma = new PrismaClient();
+const OCR_URL = process.env.OCR_URL || "http://127.0.0.1:8000";
 const app = express();
 const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-change-me";
 const PORT = process.env.PORT || 5000;
@@ -752,8 +753,8 @@ app.delete("/proofcam/:id", requireAuth, async (req, res) => {
 app.get("/health", async (_req, res) => {
   try {
     const [ocrHealth, modelHealth] = await Promise.all([
-      axios.get("http://127.0.0.1:8000/health", { timeout: 3000 }),
-      axios.get("http://127.0.0.1:8000/model-health", { timeout: 3000 }),
+      axios.get(`${OCR_URL}/health`, { timeout: 3000 }),
+      axios.get(`${OCR_URL}/model-health`, { timeout: 3000 }),
     ]);
 
     return res.json({
