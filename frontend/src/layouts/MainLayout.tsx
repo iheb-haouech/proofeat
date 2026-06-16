@@ -50,7 +50,6 @@ export default function MainLayout() {
           top: 0;
           height: 100vh;
           overflow-y: auto;
-          transition: transform 0.3s ease;
           z-index: 1000;
         }
         .app-sidebar.mobile {
@@ -58,8 +57,12 @@ export default function MainLayout() {
           left: 0;
           top: 0;
           height: 100vh;
-          transform: translateX(${sidebarOpen ? "0" : "-100%"});
+          transform: translateX(-100%);
           width: 260px;
+          transition: transform 0.3s ease;
+        }
+        .app-sidebar.mobile.open {
+          transform: translateX(0);
         }
         .app-main {
           padding: 20px;
@@ -174,11 +177,11 @@ export default function MainLayout() {
       <div className={`overlay ${sidebarOpen ? "visible" : ""}`} onClick={closeSidebar}></div>
       
       <div className="app-shell">
-        <aside className={`app-sidebar ${window.innerWidth <= 860 ? "mobile" : ""}`}>
+        <aside className={`app-sidebar ${sidebarOpen ? "mobile open" : ""}`}>
           <button 
             onClick={closeSidebar}
             style={{ 
-              display: window.innerWidth <= 860 ? "block" : "none",
+              display: "block",
               position: "absolute",
               top: "12px",
               right: "12px",
