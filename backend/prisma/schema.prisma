@@ -14,16 +14,27 @@ enum UserRole {
 }
 
 model User {
-  id                       Int                  @id @default(autoincrement())
-  email                    String               @unique
+  id                       Int                   @id @default(autoincrement())
+  email                    String                @unique
   password                 String
   name                     String?
-  role                     UserRole             @default(CLIENT)
-  createdAt                DateTime             @default(now())
+  firstName                String?
+  lastName                 String?
+  phone                    String?
+  avatarUrl                String?
+  role                     UserRole              @default(CLIENT)
+  createdAt                DateTime              @default(now())
+  updatedAt                DateTime              @updatedAt
   proofCamScans            ProofCamScan[]
-  createdInventoryProducts InventoryProduct[]   @relation("CreatedInventoryProducts")
-  inventoryUsages          InventoryUsage[]     @relation("InventoryUsagesByUser")
+  createdInventoryProducts InventoryProduct[]    @relation("CreatedInventoryProducts")
+  inventoryUsages          InventoryUsage[]      @relation("InventoryUsagesByUser")
   stockInvoiceBackups      StockInvoiceBackup[]
+  attendanceSchedules      AttendanceSchedule[]
+  attendanceEvents         AttendanceEvent[]
+  attendanceDayOffs        AttendanceDayOff[]
+  attendanceQrSessions     AttendanceQrSession[]
+  attendanceOverrides      AttendanceOverride[]
+  attendanceApprovals      AttendanceOverride[] @relation("AttendanceOverrideApprovers")
 }
 
 model Order {
@@ -31,7 +42,7 @@ model Order {
   client String
   amount Float
   status String
-  image  String? // ✅ AJOUTE ?
+  image  String?
 }
 
 model Claim {
@@ -49,7 +60,6 @@ model Proof {
   createdAt DateTime @default(now())
 }
 
-/// Uber Eats proof photo: receipt + order in one shot (ProofCam page).
 model ProofCamScan {
   id           Int       @id @default(autoincrement())
   imageUrl     String
@@ -60,6 +70,7 @@ model ProofCamScan {
   ticketDate   DateTime?
   totalAmount  Float?
   parsedData   Json?
+  validation   Json?
   userId       Int?
   user         User?     @relation(fields: [userId], references: [id])
   originalName String?
@@ -142,13 +153,13 @@ model StockInvoiceBackup {
 }
 
 model Notification {
-  id        Int      @id @default(autoincrement())
+  id        Int       @id @default(autoincrement())
   title     String
   message   String
   role      UserRole?
-  isRead    Boolean  @default(false)
+  isRead    Boolean   @default(false)
   metadata  Json?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
   @@index([role])
   @@index([isRead])
@@ -168,4 +179,202 @@ model DatasetRelease {
 
   @@index([kind, isActive])
   @@index([availableUntil])
+}
+
+enum AttendanceEventType {
+  CHECK_IN
+  BREAK_START
+  BREAK_END
+  CHECK_OUT
+}
+
+enum AttendanceQROverrideType {
+  FORCE_OPEN
+  FORCE_ACCEPT
+  FORCE_CLOSE
+}
+
+model AttendanceTeam {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  schedules   AttendanceSchedule[]
+  assignments AttendanceTeamDayAssignment[]
+}
+
+model AttendanceTeamDayAssignment {
+  id        Int      @id @default(autoincrement())
+  teamId    Int
+  dayOfWeek Int
+  createdAt DateTime @default(now())
+
+  team AttendanceTeam @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, dayOfWeek])
+  @@index([dayOfWeek])
+}
+
+enum AttendanceApprovalStatus {
+  ACCEPTED
+  SUSPICIOUS
+  OVERRIDDEN
+  REJECTED
+}
+
+model AttendanceAllowedIp {
+  id        Int      @id @default(autoincrement())
+  restaurant String
+  ip        String
+  label     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([restaurant, ip])
+  @@index([restaurant])
+}
+
+model AttendanceKioskIp {
+  id        Int      @id @default(autoincrement())
+  restaurant String
+  ip        String
+  label     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([restaurant, ip])
+  @@index([restaurant])
+}
+
+model AttendanceOverride {
+  id              Int                     @id @default(autoincrement())
+  eventId         Int?                    @unique
+  userId          Int?
+  scheduleId      Int?
+  reason          String?
+  approvedBy      Int?
+  status          AttendanceApprovalStatus @default(OVERRIDDEN)
+  metadata        Json?
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  event     AttendanceEvent?            @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  user      User?                       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  schedule  AttendanceSchedule?         @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
+  approver  User?                       @relation("AttendanceOverrideApprovers", fields: [approvedBy], references: [id])
+}
+
+model AttendanceSchedule {
+  id                    Int                   @id @default(autoincrement())
+  userId                Int
+  teamId                Int?
+  restaurant            String?
+  dayOfWeek             Int
+  startTime             String
+  endTime               String
+  breakMinAfterHours    Int                   @default(2)
+  breakMinutes          Int                   @default(60)
+  maxBreakPerDay        Int                   @default(2)
+  manualOverrideAllowed Boolean               @default(false)
+  qrWindowMinutes       Int                   @default(30)
+  isActive              Boolean               @default(true)
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  qrSessions            AttendanceQrSession[]
+  user                  User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team                  AttendanceTeam?       @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  attendanceEvents      AttendanceEvent[]
+  overrides             AttendanceOverride[]
+
+  @@index([userId])
+  @@index([teamId])
+  @@index([dayOfWeek])
+}
+
+model AttendanceDayOff {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  date      DateTime
+  reason    String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([date])
+}
+
+model AttendanceQrSession {
+  id         Int      @id @default(autoincrement())
+  token      String   @unique
+  scheduleId Int?
+  openedById Int?
+  openedAt   DateTime @default(now())
+  expiresAt  DateTime
+  isOpen     Boolean  @default(true)
+  manualOpen Boolean  @default(false)
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  schedule AttendanceSchedule? @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
+  openedBy User?               @relation(fields: [openedById], references: [id], onDelete: SetNull)
+  events   AttendanceEvent[]
+
+  @@index([isOpen])
+  @@index([expiresAt])
+}
+
+model AttendanceEvent {
+  id         Int                 @id @default(autoincrement())
+  userId     Int
+  scheduleId Int?
+  sessionId  Int?
+  eventType  AttendanceEventType
+  eventAt    DateTime            @default(now())
+  ipAddress  String?
+  userAgent  String?
+  qrToken    String?
+  isManual   Boolean             @default(false)
+  isOverride Boolean             @default(false)
+  isSuspicious Boolean            @default(false)
+  approvalStatus AttendanceApprovalStatus @default(ACCEPTED)
+  rejectionReason String?
+  note       String?
+  createdAt  DateTime            @default(now())
+
+  user     User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  schedule AttendanceSchedule?  @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
+  session  AttendanceQrSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  override AttendanceOverride?
+
+  @@index([userId])
+  @@index([eventType])
+  @@index([eventAt])
+  @@index([sessionId])
+  @@index([approvalStatus])
+  @@index([isSuspicious])
+}
+
+model RestaurantKiosk {
+  id        Int      @id @default(autoincrement())
+  name      String
+  qrSecret  String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model RestaurantHours {
+  id          Int      @id @default(autoincrement())
+  name        String
+  openDays    Int[]
+  openTime    String
+  closeTime   String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

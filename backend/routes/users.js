@@ -1,15 +1,113 @@
 const express = require("express");
 const bcrypt = require("bcrypt");
+const multer = require("multer");
 const { PrismaClient } = require("@prisma/client");
+const fs = require("fs");
+const path = require("path");
 const authorizeRoles = require("../middleware/authorizeRoles");
 
 const prisma = new PrismaClient();
 const router = express.Router();
 
-// use your existing auth middleware here
 const { requireAuth } = require("../middleware/auth");
 
-// SUPERADMIN: list all users
+const userSelect = {
+  id: true,
+  email: true,
+  name: true,
+  firstName: true,
+  lastName: true,
+  phone: true,
+  avatarUrl: true,
+  role: true,
+  createdAt: true,
+  updatedAt: true,
+};
+
+const profileStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, path.join(__dirname, "..", "uploads", "profiles")),
+  filename: (_req, file, cb) => {
+    const safe = (file.originalname || "avatar.jpg").replace(/[^\w.\-]+/g, "_");
+    cb(null, `${Date.now()}-${safe}`);
+  },
+});
+
+const profileUpload = multer({
+  storage: profileStorage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (allowed.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error("Invalid image type"));
+    }
+  },
+});
+
+router.get("/me", requireAuth, async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: userSelect,
+    });
+
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch profile" });
+  }
+});
+
+router.patch(
+  "/me/profile",
+  requireAuth,
+  async (req, res) => {
+    try {
+      const { name, firstName, lastName, phone } = req.body;
+
+      const updatedUser = await prisma.user.update({
+        where: { id: req.user.id },
+        data: {
+          name,
+          firstName,
+          lastName,
+          phone,
+        },
+        select: userSelect,
+      });
+
+      res.json(updatedUser);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update profile" });
+    }
+  }
+);
+
+router.patch(
+  "/me/profile/avatar",
+  requireAuth,
+  profileUpload.single("file"),
+  async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No image uploaded" });
+      }
+
+      const avatarUrl = `/uploads/profiles/${req.file.filename}`;
+
+      const updatedUser = await prisma.user.update({
+        where: { id: req.user.id },
+        data: { avatarUrl },
+        select: userSelect,
+      });
+
+      res.json(updatedUser);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update avatar" });
+    }
+  }
+);
+
 router.get(
   "/",
   requireAuth,
@@ -17,13 +115,7 @@ router.get(
   async (req, res) => {
     try {
       const users = await prisma.user.findMany({
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          role: true,
-          createdAt: true,
-        },
+        select: userSelect,
         orderBy: { createdAt: "desc" },
       });
 
@@ -34,7 +126,6 @@ router.get(
   }
 );
 
-// SUPERADMIN: create user
 router.post(
   "/",
   requireAuth,
@@ -68,13 +159,7 @@ router.post(
           name: name || null,
           role,
         },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          role: true,
-          createdAt: true,
-        },
+        select: userSelect,
       });
 
       res.status(201).json(user);
@@ -84,7 +169,6 @@ router.post(
   }
 );
 
-// SUPERADMIN: change role
 router.patch(
   "/:id/role",
   requireAuth,
@@ -101,12 +185,7 @@ router.patch(
       const user = await prisma.user.update({
         where: { id: userId },
         data: { role },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          role: true,
-        },
+        select: userSelect,
       });
 
       res.json(user);
@@ -116,36 +195,71 @@ router.patch(
   }
 );
 
-// USER: update own profile
-router.patch(
-  "/me/profile",
+router.get(
+  "/stats",
   requireAuth,
-  async (req, res) => {
+  authorizeRoles("SUPERADMIN"),
+  async (_req, res) => {
     try {
-      const { name, email } = req.body;
+      const uploadsDir = path.join(__dirname, "..", "uploads");
+      let uploadFileCount = 0;
 
-      const updatedUser = await prisma.user.update({
-        where: { id: req.user.id },
-        data: {
-          name,
-          email,
-        },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          role: true,
-        },
+      try {
+        uploadFileCount = fs.readdirSync(uploadsDir).filter((file) => {
+          const fullPath = path.join(uploadsDir, file);
+          return fs.statSync(fullPath).isFile();
+        }).length;
+      } catch (err) {
+        uploadFileCount = 0;
+      }
+
+      const [
+        superAdmins,
+        admins,
+        clients,
+        proofCamScans,
+        orders,
+        claims,
+        inventoryProducts,
+        attendanceEvents,
+        attendanceSchedules,
+        attendanceDayOffs,
+        notifications,
+        datasetReleases,
+      ] = await Promise.all([
+        prisma.user.count({ where: { role: "SUPERADMIN" } }),
+        prisma.user.count({ where: { role: "ADMIN" } }),
+        prisma.user.count({ where: { role: "CLIENT" } }),
+        prisma.proofCamScan.count(),
+        prisma.order.count(),
+        prisma.claim.count(),
+        prisma.inventoryProduct.count(),
+        prisma.attendanceEvent.count(),
+        prisma.attendanceSchedule.count(),
+        prisma.attendanceDayOff.count(),
+        prisma.notification.count(),
+        prisma.datasetRelease.count(),
+      ]);
+
+      res.json({
+        users: { superAdmins, admins, clients, total: superAdmins + admins + clients },
+        proofCamScans,
+        orders,
+        claims,
+        inventoryProducts,
+        attendanceEvents,
+        attendanceSchedules,
+        attendanceDayOffs,
+        notifications,
+        datasetReleases,
+        uploadsFileCount: uploadFileCount,
       });
-
-      res.json(updatedUser);
     } catch (error) {
-      res.status(500).json({ message: "Failed to update profile" });
+      res.status(500).json({ message: "Failed to fetch stats" });
     }
   }
 );
 
-// USER: change own password
 router.patch(
   "/me/password",
   requireAuth,

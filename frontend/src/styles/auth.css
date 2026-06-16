@@ -4,20 +4,18 @@
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background:
-    radial-gradient(ellipse 80% 60% at 50% -10%, rgba(56, 189, 248, 0.25), transparent),
-    linear-gradient(165deg, #0f172a 0%, #1e1b4b 45%, #0f172a 100%);
+  background: #0a0a0a;
 }
 
 .auth-card {
   width: 100%;
   max-width: 420px;
-  background: rgba(15, 23, 42, 0.85);
+  background: #1a1a1a;
   backdrop-filter: blur(16px);
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  border: 1px solid #333;
   border-radius: 20px;
   padding: 32px 28px;
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.5);
   text-align: left;
 }
 
@@ -32,19 +30,25 @@
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #38bdf8, #6366f1);
+  background: linear-gradient(135deg, #d4ff00, #a8e600);
   display: grid;
   place-items: center;
   font-weight: 800;
-  color: #fff;
+  color: #0a0a0a;
   font-size: 18px;
+}
+
+.auth-logo {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
 }
 
 .auth-brand h1 {
   margin: 0;
   font-size: 1.35rem;
   font-weight: 700;
-  color: #f8fafc;
+  color: #ffffff;
   letter-spacing: -0.02em;
 }
 
@@ -57,7 +61,7 @@
 .auth-card h2 {
   margin: 0 0 6px;
   font-size: 1.5rem;
-  color: #f1f5f9;
+  color: #ffffff;
 }
 
 .auth-sub {
@@ -86,17 +90,17 @@
   box-sizing: border-box;
   padding: 12px 14px;
   border-radius: 10px;
-  border: 1px solid #334155;
-  background: #0f172a;
-  color: #f8fafc;
+  border: 1px solid #333;
+  background: #0a0a0a;
+  color: #ffffff;
   font-size: 1rem;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
 .auth-field input:focus {
   outline: none;
-  border-color: #38bdf8;
-  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+  border-color: #d4ff00;
+  box-shadow: 0 0 0 3px rgba(212, 255, 0, 0.2);
 }
 
 .auth-error {
@@ -115,8 +119,8 @@
   padding: 13px;
   border: none;
   border-radius: 10px;
-  background: linear-gradient(135deg, #38bdf8, #6366f1);
-  color: #fff;
+  background: linear-gradient(135deg, #d4ff00, #a8e600);
+  color: #0a0a0a;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
@@ -141,7 +145,7 @@
 }
 
 .auth-footer a {
-  color: #38bdf8;
+  color: #d4ff00;
   font-weight: 600;
   text-decoration: none;
 }
@@ -157,15 +161,15 @@
   align-items: center;
   justify-content: center;
   gap: 12px;
-  background: #0f172a;
+  background: #0a0a0a;
   color: #94a3b8;
 }
 
 .spinner {
   width: 36px;
   height: 36px;
-  border: 3px solid #334155;
-  border-top-color: #38bdf8;
+  border: 3px solid #333;
+  border-top-color: #d4ff00;
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }
@@ -174,4 +178,49 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+.mobile-download-section {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #333;
+}
+
+.mobile-download-text {
+  margin: 0 0 12px;
+  color: #94a3b8;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.mobile-download-links {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mobile-download-btn {
+  display: block;
+  padding: 10px 14px;
+  border-radius: 10px;
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-align: center;
+  transition: transform 0.15s, opacity 0.15s;
+}
+
+.mobile-download-btn:hover {
+  transform: translateY(-1px);
+  opacity: 0.92;
+}
+
+.mobile-download-btn.android {
+  background: linear-gradient(135deg, #d4ff00, #a8e600);
+  color: #0a0a0a;
+}
+
+.mobile-download-btn.ios {
+  background: linear-gradient(135deg, #ffffff, #e2e8f0);
+  color: #0a0a0a;
 }

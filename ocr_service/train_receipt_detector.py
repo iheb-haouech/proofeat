@@ -52,6 +52,13 @@ def train_model(data_path: Path, model: str, epochs: int, imgsz: int, batch: int
         batch=batch,
         project=project,
         name=name,
+        workers=0,
+        save=False,
+        plots=False,
+        deterministic=True,
+        close_mosaic=0,
+        rect=True,
+        device="cpu",
     )
 
 

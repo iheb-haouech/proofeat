@@ -54,7 +54,7 @@ export default function Register() {
     <div className="auth-page">
       <div className="auth-card">
         <div className="auth-brand">
-          <div className="auth-brand-icon">PE</div>
+          <img src="/logo.png" alt="ProofEat" className="auth-logo" />
           <div>
             <h1>ProofEat</h1>
             <p>Créez votre compte restaurant</p>

@@ -17,10 +17,16 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    if (err.response?.status === 401 && !err.config?.url?.includes("/auth/")) {
+    if (
+      err.response?.status === 401 &&
+      !err.config?.url?.includes("/auth/")
+    ) {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
-      if (window.location.pathname !== "/login" && window.location.pathname !== "/inscription") {
+      if (
+        window.location.pathname !== "/login" &&
+        window.location.pathname !== "/inscription"
+      ) {
         window.location.href = "/login";
       }
     }

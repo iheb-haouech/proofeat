@@ -12,6 +12,10 @@ type User = {
   id: number;
   email: string;
   name?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  phone?: string | null;
+  avatarUrl?: string | null;
   role: "SUPERADMIN" | "ADMIN" | "CLIENT";
 };
 
@@ -34,6 +38,13 @@ export const AuthContext = createContext<AuthContextValue | null>(null);
 const TOKEN_KEY = "token";
 const USER_KEY = "user";
 
+function normalizeUser(user: User): User {
+  return {
+    ...user,
+    role: String(user.role || "CLIENT").toUpperCase() as User["role"],
+  };
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -46,7 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (t && u) {
       setToken(t);
       try {
-        setUser(JSON.parse(u));
+        setUser(normalizeUser(JSON.parse(u)));
       } catch {
         localStorage.removeItem(USER_KEY);
       }
@@ -56,10 +67,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const persist = useCallback((t: string, u: User) => {
+    const normalized = normalizeUser(u);
     localStorage.setItem(TOKEN_KEY, t);
-    localStorage.setItem(USER_KEY, JSON.stringify(u));
+    localStorage.setItem(USER_KEY, JSON.stringify(normalized));
     setToken(t);
-    setUser(u);
+    setUser(normalized);
   }, []);
 
   const login = useCallback(async (email: string, password: string): Promise<AuthResponse> => {

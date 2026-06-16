@@ -3,7 +3,7 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
-  background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+  background: #0a0a0a;
   min-height: 100%;
 }
 
@@ -11,30 +11,62 @@
   margin: 0;
   font-size: clamp(1.5rem, 4vw, 2rem);
   font-weight: 800;
-  color: #0f172a;
+  color: #ffffff;
 }
 
 .proofcam-header p,
 .muted {
-  color: #64748b;
+  color: #94a3b8;
   line-height: 1.6;
   margin: 8px 0 0;
   font-size: 0.95rem;
 }
 
 .proofcam-card {
-  background: rgba(255, 255, 255, 0.95);
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: #1a1a1a;
+  border: 1px solid #333;
   border-radius: 20px;
   padding: clamp(16px, 3vw, 24px);
-  box-shadow: 0 12px 35px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.3);
 }
 
 .upload-card h2,
 .history-card h2 {
   margin: 0 0 6px;
   font-size: 1.25rem;
-  color: #0f172a;
+  color: #ffffff;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.btn-primary,
+.btn-secondary {
+  border: none;
+  border-radius: 12px;
+  padding: 12px 18px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #d4ff00, #a8e600);
+  color: #0a0a0a;
+}
+
+.btn-secondary {
+  background: #333;
+  color: #d4ff00;
+}
+
+.btn-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .actions {
@@ -240,7 +272,7 @@
 .proofcam-table {
   width: 100%;
   border-collapse: collapse;
-  background: #fff;
+  background: #1a1a1a;
   min-width: 520px;
 }
 
@@ -250,24 +282,24 @@
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #64748b;
-  background: #f8fafc;
-  border-bottom: 1px solid #e2e8f0;
+  color: #d4ff00;
+  background: #0a0a0a;
+  border-bottom: 1px solid #333;
 }
 
 .proofcam-table td {
   padding: 12px;
-  border-bottom: 1px solid #f1f5f9;
-  color: #0f172a;
+  border-bottom: 1px solid #333;
+  color: #ffffff;
   vertical-align: middle;
 }
 
 .row-processing {
-  background: #fffbeb;
+  background: #1a1a1a;
 }
 
 .processing {
-  color: #b45309;
+  color: #d4ff00;
   font-weight: 600;
 }
 
@@ -276,15 +308,15 @@
   height: 64px;
   object-fit: cover;
   border-radius: 10px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #333;
 }
 
 .download-link {
   display: inline-block;
   padding: 8px 12px;
   border-radius: 8px;
-  background: #0f172a;
-  color: #fff;
+  background: linear-gradient(135deg, #d4ff00, #a8e600);
+  color: #0a0a0a;
   text-decoration: none;
   font-size: 0.85rem;
   font-weight: 600;
@@ -311,14 +343,14 @@
 
 /* â”€â”€ Dataset Panel (SUPERADMIN) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .dataset-panel {
-  border: 1.5px solid #6366f1;
-  background: linear-gradient(135deg, #fafafa 0%, #f0f0ff 100%);
+  border: 1.5px solid #d4ff00;
+  background: #1a1a1a;
 }
 
 .dataset-panel h2 {
   margin: 0 0 4px;
   font-size: 1.25rem;
-  color: #0f172a;
+  color: #ffffff;
 }
 
 .dataset-panel-header {
@@ -333,8 +365,8 @@
   display: inline-block;
   padding: 3px 10px;
   border-radius: 99px;
-  background: #6366f1;
-  color: #fff;
+  background: #d4ff00;
+  color: #0a0a0a;
   font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -358,9 +390,9 @@
   gap: 4px;
 }
 
-.stat-labeled   { background: #dcfce7; }
-.stat-unlabeled { background: #fee2e2; }
-.stat-total     { background: #e0e7ff; }
+.stat-labeled   { background: rgba(212, 255, 0, 0.15); }
+.stat-unlabeled { background: rgba(239, 68, 68, 0.15); }
+.stat-total     { background: rgba(212, 255, 0, 0.25); }
 
 .stat-value {
   font-size: 1.6rem;
@@ -368,14 +400,14 @@
   line-height: 1;
 }
 
-.stat-labeled   .stat-value { color: #16a34a; }
-.stat-unlabeled .stat-value { color: #dc2626; }
-.stat-total     .stat-value { color: #4f46e5; }
+.stat-labeled   .stat-value { color: #d4ff00; }
+.stat-unlabeled .stat-value { color: #ef4444; }
+.stat-total     .stat-value { color: #d4ff00; }
 
 .stat-label {
   font-size: 0.72rem;
   font-weight: 500;
-  color: #555;
+  color: #94a3b8;
   text-align: center;
 }
 
@@ -390,21 +422,21 @@
   flex: 1;
   height: 8px;
   border-radius: 99px;
-  background: #e5e7eb;
+  background: #333;
   overflow: hidden;
 }
 
 .dataset-progress-bar-fill {
   height: 100%;
   border-radius: 99px;
-  background: linear-gradient(90deg, #6366f1, #22c55e);
+  background: linear-gradient(90deg, #d4ff00, #a8e600);
   transition: width 0.4s ease;
 }
 
 .dataset-progress-label {
   font-size: 0.75rem;
   font-weight: 600;
-  color: #555;
+  color: #94a3b8;
   white-space: nowrap;
 }
 
@@ -438,8 +470,8 @@
   cursor: not-allowed;
 }
 
-.btn-export.csv  { background: #16a34a; color: #fff; }
-.btn-export.json { background: #4f46e5; color: #fff; }
+.btn-export.csv  { background: #d4ff00; color: #0a0a0a; }
+.btn-export.json { background: #ffffff; color: #0a0a0a; }
 
 .dataset-note {
   font-size: 0.75rem;
@@ -448,11 +480,102 @@
 }
 
 .dataset-note code {
-  background: #e0e7ff;
+  background: rgba(212, 255, 0, 0.15);
   padding: 1px 5px;
   border-radius: 4px;
   font-size: 0.72rem;
-  color: #4f46e5;
+  color: #d4ff00;
+}
+
+.validation-card {
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid #333;
+  background: #1a1a1a;
+  color: #ffffff;
+}
+
+.validation-card.valid {
+  border-color: #d4ff00;
+  background: rgba(212, 255, 0, 0.1);
+}
+
+.validation-card.invalid {
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.validation-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.validation-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: #ffffff;
+}
+
+.confidence-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.confidence-badge.high {
+  background: rgba(212, 255, 0, 0.2);
+  color: #d4ff00;
+}
+
+.confidence-badge.low {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+.validation-summary p {
+  margin: 6px 0;
+  font-size: 0.92rem;
+  color: #ffffff;
+}
+
+.anomalies-list {
+  margin-top: 10px;
+}
+
+.anomalies-list h4 {
+  margin: 0 0 6px;
+  font-size: 0.92rem;
+  color: #ffffff;
+}
+
+.anomaly-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px;
+  border-radius: 10px;
+  background: #0a0a0a;
+  border: 1px solid #333;
+  margin-bottom: 6px;
+}
+
+.anomaly-item .anomaly-type {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  color: #94a3b8;
+}
+
+.anomaly-item .anomaly-message {
+  font-size: 0.92rem;
+  color: #ffffff;
 }
 /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
@@ -472,9 +595,9 @@
   .proofcam-table tr {
     margin-bottom: 16px;
     padding: 14px;
-    border: 1px solid #e2e8f0;
+    border: 1px solid #333;
     border-radius: 14px;
-    background: #fff;
+    background: #1a1a1a;
   }
 
   .proofcam-table td {
@@ -487,7 +610,7 @@
     display: block;
     font-size: 0.7rem;
     text-transform: uppercase;
-    color: #94a3b8;
+    color: #d4ff00;
     margin-bottom: 4px;
   }
 

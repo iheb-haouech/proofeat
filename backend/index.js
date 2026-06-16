@@ -11,11 +11,13 @@ const cron = require("node-cron");
 const { PrismaClient } = require("@prisma/client");
 const { warmupOcr, readTicketFromImage } = require("./lib/ocrWorker");
 const { parseTicketData } = require("./lib/ticketExtract");
+const { validateOrder } = require("./lib/validateOrder");
 const inventoryRoutes = require("./routes/inventory.routes");
 const inventoryController = require("./controllers/inventory.controller");
 const ensureSuperAdmin = require("./utils/ensureSuperAdmin");
 const usersRouter = require("./routes/users");
 const { requireAuth } = require("./middleware/auth");
+const attendanceRoutes = require("./routes/attendance.routes");
 
 const prisma = new PrismaClient();
 const OCR_URL = process.env.OCR_URL || "http://127.0.0.1:8000";
@@ -27,6 +29,8 @@ app.use(cors({ origin: true }));
 app.use(express.json({ limit: "10mb" }));
 app.use("/inventory", inventoryRoutes);
 app.use("/users", usersRouter);
+app.use("/attendance", attendanceRoutes);
+
 
 const uploadsDir = path.join(__dirname, "uploads");
 const processedDir = path.join(__dirname, "processed");
@@ -34,6 +38,7 @@ const stockInvoicesDir = path.join(__dirname, "stock-invoices");
 const datasetsDir = path.join(__dirname, "datasets");
 
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+if (!fs.existsSync(path.join(uploadsDir, "profiles"))) fs.mkdirSync(path.join(uploadsDir, "profiles"), { recursive: true });
 if (!fs.existsSync(processedDir)) fs.mkdirSync(processedDir, { recursive: true });
 if (!fs.existsSync(stockInvoicesDir)) fs.mkdirSync(stockInvoicesDir, { recursive: true });
 if (!fs.existsSync(datasetsDir)) fs.mkdirSync(datasetsDir, { recursive: true });
@@ -103,6 +108,7 @@ function toApiRow(row) {
     createdAt: row.createdAt.toISOString(),
     originalName: row.originalName,
     rawText: row.rawText,
+    validation: row.validation || null,
   };
 }
 
@@ -387,7 +393,16 @@ app.post("/auth/register", async (req, res) => {
 
     res.status(201).json({
       token,
-      user: { id: user.id, email: user.email, name: user.name, role: user.role },
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        phone: user.phone,
+        avatarUrl: user.avatarUrl,
+        role: user.role,
+      },
     });
   } catch (err) {
     console.error("REGISTER:", err);
@@ -414,7 +429,16 @@ async function handleLogin(req, res) {
 
     res.json({
       token,
-      user: { id: user.id, email: user.email, name: user.name, role: user.role },
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        phone: user.phone,
+        avatarUrl: user.avatarUrl,
+        role: user.role,
+      },
     });
   } catch (err) {
     console.error("LOGIN:", err);
@@ -442,6 +466,7 @@ async function processScanAsync(scanId, inputPath) {
     }
 
     const parsed = result.parsedData || parseTicketData(result.text || "");
+    const validation = validateOrder((result.text || "") + "\n" + (parsed.totalAmount ? `TOTAL ${parsed.totalAmount}` : ""));
 
     await prisma.proofCamScan.update({
       where: { id: scanId },
@@ -454,6 +479,7 @@ async function processScanAsync(scanId, inputPath) {
         parsedData: parsed,
         processedUrl,
         rawText: (result.text || "").slice(0, 12000),
+        validation,
         status: result.ticketNumber || parsed.ticketNumber ? "done" : "failed",
       },
     });

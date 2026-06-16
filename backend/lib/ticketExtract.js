@@ -1,5 +1,5 @@
 function normalizeText(text) {
-  return String(text || "")
+  const s = String(text || "")
     .replace(/\r/g, "\n")
     .replace(/[|]/g, " ")
     .replace(/[“”]/g, '"')
@@ -12,7 +12,27 @@ function normalizeText(text) {
     .replace(/Frlte/gi, "Frite")
     .replace(/TotaI/gi, "Total")
     .replace(/CIient/gi, "Client")
+    .replace(/Algeon/gi, "Algérien")
+    .replace(/Algerien/gi, "Algérien")
+    .replace(/Tacos?\s*Alg(?:é|e)rienn?e/gi, "Tacos Algérienne")
+    .replace(/Baco/gi, "Baco")
+    .replace(/Box\s+Tacos/gi, "Box Tacos")
+    .replace(/Box\s+Tacos/gi, "Box Tacos")
     .replace(/\n{2,}/g, "\n")
+    .trim();
+  return s;
+}
+
+function normalizeOcrName(text) {
+  if (!text) return text;
+  return String(text)
+    .replace(/0/g, "O")
+    .replace(/8/g, "B")
+    .replace(/\b1\b/g, "I")
+    .replace(/5/g, "S")
+    .replace(/6/g, "b")
+    .replace(/rn/g, "m")
+    .replace(/cl/g, "d")
     .trim();
 }
 
@@ -76,32 +96,47 @@ function isLikelyPersonName(line) {
   if (clean.length < 2 || clean.length > 50) return false;
   if (/\d/.test(clean)) return false;
   if (/uber\s*eats|deliveroo|chamas|tacos|jaude|rushour/i.test(clean)) return false;
-  if (/client|commande|préparer|preparer|telephone|téléphone|méthode|methode|code|paiement|notes?/i.test(clean)) return false;
+  if (/client|commande|préparer|preparer|telephone|téléphone|méthode|methode|code|paiement|notes?|ajouter|pas de couverts|nombre de produits|restaurant|lien|www\.|heure|date|tva|total|sous[- ]?total|remise|cb|visa|mastercard|merci/i.test(clean)) return false;
   if (/^pas de couverts?$/i.test(clean)) return false;
-  if (/^[A-Z\s]+$/.test(clean) && clean.split(/\s+/).length > 4) return false;
+  if (/^[A-Z\s]+$/i.test(clean) && clean.split(/\s+/).length > 4) return false;
+  if (/^(burger|pizza|salade|wrap|menu|tacos|boisson|frite|dessert|accompagnement|viande|sauce|fromage|légume|dessert|café|boisson|frite|sauce|viande|accompagnement)$/i.test(clean)) return false;
 
   return /^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ.'-]*(?:\s+[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ.'-]*){0,3}\.?$/.test(clean);
 }
 
 function extractCustomerName(text, ticketNumber) {
+  text = normalizeText(text);
+  if (!text) return null;
+
   const lines = normalizeLines(text);
-  const codeKey = ticketNumber ? ticketNumber.replace("#", "").toUpperCase() : null;
+  let prev = null;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    const compact = line.replace(/\s/g, "").toUpperCase();
 
-    if (codeKey && compact.includes(codeKey)) {
-      for (let j = i + 1; j < Math.min(i + 8, lines.length); j++) {
-        const next = lines[j].trim();
+    if (/uber\s*eats|deliveroo|commande|chamas|livraison/i.test(line)) {
+      prev = line;
+      continue;
+    }
 
-        if (/client a commandé|client a commande|nouveau client/i.test(next)) continue;
-        if (/^(client|commande|préparer|preparer|telephone|téléphone|méthode|methode|code|notes?)/i.test(next)) continue;
+    if (/client\s*[:\-]?/i.test(line)) {
+      const raw = line.replace(/^client\s*[:\-]?\s*/i, "").trim();
+      const candidate = normalizeOcrName(raw);
+      if (isLikelyPersonName(candidate)) return candidate;
+      if (prev && isLikelyPersonName(prev)) return normalizeOcrName(prev.replace(/\.$/, "").trim());
 
-        if (isLikelyPersonName(next)) {
-          return next.replace(/\.$/, "").trim();
-        }
-      }
+      const next = lines[i + 1];
+      if (next && isLikelyPersonName(normalizeOcrName(next))) return normalizeOcrName(next.replace(/\.$/, "").trim());
+    }
+
+    if (/telephone|téléphone|tél/i.test(line)) {
+      prev = line;
+      continue;
+    }
+
+    if (isLikelyPersonName(line)) {
+      prev = line;
+      continue;
     }
   }
 
@@ -207,23 +242,12 @@ function isPriceOnlyLine(line) {
   return /^\s*[0-9]+[.,][0-9]{2}\s*(?:€|EUR)?\s*$/i.test(line);
 }
 
-function shouldIgnoreLine(line) {
-  return /^(?:total|sous[-\s]?total|tva|remise|paiement|cb|visa|mastercard|merci|heure|date|restaurant|lien|www\.|tel|téléphone|client|commande|méthode|methode|code téléphone|code telephone|notes?|ajouter|pas de couverts|nombre de produits|préparer|preparer|nouveau client|client a commandé|client a commande)/i.test(line);
-}
-
-function isModifierLine(line) {
-  return /^(?:sauce|sauces|blanche|algérienne|algerienne|barbecue|ketchup|mayonnaise|cordon bleu|biggy|taille|boisson|frites|frite|gratina?ge|mozzarella|tenders|simple|une viande au choix|curry|salade|rosti|kebab|poulet mariné|poulet marine|produit à composer|produit a composer|garniture offerte|tacos à composer|tacos a composer|composer)/i.test(line);
-}
-
-function isPriceOnlyLine(line) {
-  return /^\s*[0-9]+[.,][0-9]{2}\s*(?:€|EUR)?\s*$/i.test(line);
-}
-
 function cleanItemName(name) {
-  return String(name || "")
+  const raw = String(name || "")
     .replace(/^\-+\s*/, "")
     .replace(/\s+/g, " ")
     .trim();
+  return normalizeOcrName(raw);
 }
 
 function extractLineItems(text) {

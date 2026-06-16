@@ -19,6 +19,22 @@ type ParsedData = {
   items?: ParsedItem[];
 };
 
+type ValidationSummary = {
+  isValid?: boolean;
+  confidence?: number | null;
+  summary?: {
+    ticketNumber?: string | null;
+    customerName?: string | null;
+    ticketTotal?: number | null;
+    computedTotal?: number | null;
+    totalMatch?: boolean | null;
+    totalDiff?: number | null;
+    itemsCount?: number | null;
+    anomaliesCount?: number | null;
+  };
+  anomalies?: Array<{ type: string; message: string }>;
+};
+
 type ScanItem = {
   id: string;
   imageUrl: string;
@@ -31,6 +47,7 @@ type ScanItem = {
   rawText?: string | null;
   parsedData?: ParsedData;
   scannedBy?: string | null;
+  validation?: ValidationSummary | null;
 };
 
 type DatasetStatus = {
@@ -565,6 +582,7 @@ export default function ProofCam() {
                 <th>Ticket</th>
                 <th>Client</th>
                 <th>Total</th>
+                <th>Validation</th>
                 <th>Date</th>
                 <th>Actions</th>
               </tr>
@@ -594,6 +612,18 @@ export default function ProofCam() {
                       {canSeePrices && item.parsedData?.totalAmount != null
                         ? `${item.parsedData.totalAmount.toFixed(2)}€`
                         : "—"}
+                    </td>
+
+                    <td data-label="Validation">
+                      {item.status === "processing" ? (
+                        <span className="processing">…</span>
+                      ) : item.validation ? (
+                        <span className={`validation-badge ${item.validation.isValid ? "valid" : "invalid"}`}>
+                          {item.validation.isValid ? "Validé" : "Anomalie"}
+                        </span>
+                      ) : (
+                        "—"
+                      )}
                     </td>
 
                     <td data-label="Date">{new Date(item.createdAt).toLocaleString()}</td>

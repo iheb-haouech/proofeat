@@ -11,6 +11,24 @@ type ParsedItem = {
   totalPrice?: number | null;
 };
 
+type ValidationAnomaly = {
+  type: string;
+  message?: string;
+  item?: string;
+};
+
+type ValidationSummary = {
+  isValid?: boolean;
+  confidence?: number | null;
+  summary?: {
+    ticketTotal?: number | null;
+    computedTotal?: number | null;
+    itemsCount?: number | null;
+    anomaliesCount?: number | null;
+  };
+  anomalies?: ValidationAnomaly[];
+};
+
 type ParsedData = {
   phoneNumber?: string | null;
   ticketDate?: string | null;
@@ -30,6 +48,7 @@ type ScanItem = {
   rawText?: string | null;
   parsedData?: ParsedData;
   scannedBy?: string | null;
+  validation?: ValidationSummary | null;
 };
 
 export default function ProofCamDetail() {
@@ -164,7 +183,7 @@ export default function ProofCamDetail() {
                 <p>
                   <strong>Scanné par :</strong> {item.scannedBy ?? "—"}
                 </p>
-              </div>
+                </div>
 
               {item.processedUrl ? (
                 <div className="preview-wrap">
@@ -178,11 +197,47 @@ export default function ProofCamDetail() {
                 <img src={API_BASE + item.imageUrl} alt="Image originale" className="preview-image" />
               </div>
 
+              {item.validation && (
+                <div className={`validation-card ${item.validation.isValid ? "valid" : "invalid"}`}>
+                  <div className="validation-header">
+                    <h3>Validation commande</h3>
+                    <span className={`confidence-badge ${(item.validation.confidence || 0) >= 80 ? "high" : "low"}`}>
+                      Confiance : {item.validation.confidence || 0}%
+                    </span>
+                  </div>
+                  {item.validation.summary && (
+                    <div className="validation-summary">
+                      <p><strong>Articles :</strong> {item.validation.summary.itemsCount ?? 0}</p>
+                      <p><strong>Anomalies :</strong> {item.validation.summary.anomaliesCount ?? 0}</p>
+                      {item.validation.summary.ticketTotal != null && (
+                        <p>
+                          <strong>Total ticket :</strong> {item.validation.summary.ticketTotal.toFixed(2)}€
+                          {item.validation.summary.computedTotal != null && (
+                            <span> vs menu {item.validation.summary.computedTotal.toFixed(2)}€</span>
+                          )}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                  {item.validation.anomalies && item.validation.anomalies.length > 0 && (
+                    <div className="anomalies-list">
+                      {item.validation.anomalies.map((anomaly, idx) => (
+                        <div key={`${item.id}-anomaly-${idx}`} className={`anomaly-item ${anomaly.type}`}>
+                          <span className="anomaly-type">{anomaly.type}</span>
+                          <span className="anomaly-message">{anomaly.message}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {item.parsedData?.items?.length ? (
                 <div className="section-title">
                   <h2>Articles détectés</h2>
                 </div>
               ) : null}
+
 
               {item.parsedData?.items?.length ? (
                 <table className="item-table">

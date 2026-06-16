@@ -52,14 +52,22 @@ export default function Dashboard() {
   const { user } = useAuth();
   const [stats, setStats] = useState<Stats>({ scans: 0, totalAmount: 0 });
   const [recentScans, setRecentScans] = useState<ScanRow[]>([]);
-  const [filters, setFilters] = useState<FilterState>({ client: "", fromDate: "", toDate: "" });
+  const [filters, setFilters] = useState<FilterState>({
+    client: "",
+    fromDate: "",
+    toDate: "",
+  });
   const canSeePrices = user?.role === "ADMIN";
+  const canSeeAttendance = user?.role === "ADMIN" || user?.role === "SUPERADMIN";
 
   useEffect(() => {
     api
       .get("/dashboard")
       .then((res) => {
-        setStats({ scans: res.data.scans ?? 0, totalAmount: res.data.totalAmount ?? 0 });
+        setStats({
+          scans: res.data.scans ?? 0,
+          totalAmount: res.data.totalAmount ?? 0,
+        });
         setRecentScans(res.data.recentScans || []);
       })
       .catch(() => {
@@ -77,8 +85,10 @@ export default function Dashboard() {
       }
 
       const scanDate = scan.ticketDate || scan.createdAt;
-      if (filters.fromDate && !clampDate(scanDate, filters.fromDate, undefined)) return false;
-      if (filters.toDate && !clampDate(scanDate, undefined, filters.toDate)) return false;
+      if (filters.fromDate && !clampDate(scanDate, filters.fromDate, undefined))
+        return false;
+      if (filters.toDate && !clampDate(scanDate, undefined, filters.toDate))
+        return false;
       return true;
     });
   }, [filters, recentScans]);
@@ -97,7 +107,8 @@ export default function Dashboard() {
         if (!key) return;
         const existing = map.get(key) || { name: key, quantity: 0, amount: 0 };
         const qty = Number(item.quantity) || 1;
-        const amount = Number(item.totalPrice) || Number(item.unitPrice) * qty || 0;
+        const amount =
+          Number(item.totalPrice) || Number(item.unitPrice) * qty || 0;
         existing.quantity += qty;
         existing.amount += amount;
         map.set(key, existing);
@@ -106,28 +117,30 @@ export default function Dashboard() {
     return [...map.values()].sort((a, b) => b.quantity - a.quantity);
   }, [filteredScans]);
 
-  const canSeeScanner = user?.role === "ADMIN";
-
   return (
     <div className="dashboard-page">
       <div className="dash-header">
         <div>
           <h1>Tableau de bord</h1>
           <p className="muted">
-            {canSeeScanner
-              ? "Filtrer les tickets par client ou par date. Tous les tickets sont visibles en tant qu'admin."
-              : "Vos tickets scannés sont affichés ci-dessous."
-            }
+            {canSeeAttendance
+              ? "Admin: accès aux tickets et au pointage."
+              : "Vos tickets scannés sont affichés ci-dessous."}
           </p>
         </div>
-        <div style={{ display: "flex", gap: 12 }}>
-            <Link to="/inventory" className="dash-cta">
-              Gestion de stock
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+          <Link to="/inventory" className="dash-cta">
+            Gestion de stock
+          </Link>
+          <Link to="/proofcam" className="dash-cta">
+            + Nouveau scan
+          </Link>
+          {canSeeAttendance && (
+            <Link to="/attendance" className="dash-cta">
+              Pointage
             </Link>
-            <Link to="/proofcam" className="dash-cta">
-              + Nouveau scan
-            </Link>
-          </div>
+          )}
+        </div>
       </div>
 
       <div className="kpi-grid">
@@ -145,9 +158,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-
-
-
       <div className="dash-section filters-section">
         <h2>Filtres</h2>
         <div className="filters-row">
@@ -156,7 +166,9 @@ export default function Dashboard() {
             <input
               type="text"
               value={filters.client}
-              onChange={(e) => setFilters((prev) => ({ ...prev, client: e.target.value }))}
+              onChange={(e) =>
+                setFilters((prev) => ({ ...prev, client: e.target.value }))
+              }
               placeholder="Nom client ou scanneur"
             />
           </label>
@@ -165,7 +177,9 @@ export default function Dashboard() {
             <input
               type="date"
               value={filters.fromDate}
-              onChange={(e) => setFilters((prev) => ({ ...prev, fromDate: e.target.value }))}
+              onChange={(e) =>
+                setFilters((prev) => ({ ...prev, fromDate: e.target.value }))
+              }
             />
           </label>
           <label>
@@ -173,7 +187,9 @@ export default function Dashboard() {
             <input
               type="date"
               value={filters.toDate}
-              onChange={(e) => setFilters((prev) => ({ ...prev, toDate: e.target.value }))}
+              onChange={(e) =>
+                setFilters((prev) => ({ ...prev, toDate: e.target.value }))
+              }
             />
           </label>
           <button
@@ -198,7 +214,7 @@ export default function Dashboard() {
                 <th>Montant</th>
                 <th>Statut</th>
                 <th>Date ticket</th>
-                {canSeeScanner && <th>Scanné par</th>}
+                {canSeeAttendance && <th>Scanné par</th>}
               </tr>
             </thead>
             <tbody>
@@ -213,19 +229,31 @@ export default function Dashboard() {
                     )}
                   </td>
                   <td>{scan.customerName ?? "—"}</td>
-                  <td>{canSeePrices && scan.totalAmount != null ? `${scan.totalAmount.toFixed(2)}€` : "—"}</td>
                   <td>
-                    <span className={`badge ${scan.status === "done" ? "green" : "orange"}`}>
+                    {canSeePrices && scan.totalAmount != null
+                      ? `${scan.totalAmount.toFixed(2)}€`
+                      : "—"}
+                  </td>
+                  <td>
+                    <span
+                      className={`badge ${
+                        scan.status === "done" ? "green" : "orange"
+                      }`}
+                    >
                       {scan.status}
                     </span>
                   </td>
-                  <td>{scan.ticketDate ? new Date(scan.ticketDate).toLocaleString() : "—"}</td>
-                  {canSeeScanner && <td>{scan.scannedBy ?? "—"}</td>}
+                  <td>
+                    {scan.ticketDate
+                      ? new Date(scan.ticketDate).toLocaleString()
+                      : "—"}
+                  </td>
+                  {canSeeAttendance && <td>{scan.scannedBy ?? "—"}</td>}
                 </tr>
               ))}
               {!filteredScans.length && (
                 <tr>
-                  <td colSpan={canSeeScanner ? 7 : 6} className="empty">
+                  <td colSpan={canSeeAttendance ? 7 : 6} className="empty">
                     Aucun ticket correspondant aux filtres.
                   </td>
                 </tr>

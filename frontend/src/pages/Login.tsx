@@ -52,7 +52,7 @@ if (token) {
     <div className="auth-page">
       <div className="auth-card">
         <div className="auth-brand">
-          <div className="auth-brand-icon">PE</div>
+          <img src="/logo.png" alt="ProofEat" className="auth-logo" />
           <div>
             <h1>ProofEat</h1>
             <p>Preuves de commande Uber Eats</p>
@@ -99,6 +99,28 @@ if (token) {
         <p className="auth-footer">
           Pas encore de compte ? <Link to="/inscription">S&apos;inscrire</Link>
         </p>
+
+        <div className="mobile-download-section">
+          <p className="mobile-download-text">Disponible en application mobile :</p>
+          <div className="mobile-download-links">
+            <a
+              href="https://proofeat.cloud/proofeat-android.apk"
+              className="mobile-download-btn android"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              📱 Télécharger Android APK
+            </a>
+            <a
+              href="https://proofeat.cloud/proofeat-ios.ipa"
+              className="mobile-download-btn ios"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              🍏 Télécharger iOS
+            </a>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -265,7 +265,6 @@ async function listInvoiceBackups(req, res) {
     const backups = await prisma.stockInvoiceBackup.findMany({
       orderBy: { createdAt: "desc" },
       include: {
-        product: true,
         uploadedBy: {
           select: { id: true, email: true, role: true },
         },
@@ -274,10 +273,8 @@ async function listInvoiceBackups(req, res) {
 
     res.json(backups);
   } catch (err) {
-    res.status(500).json({
-      message: "Could not load invoice backups",
-      details: err.message,
-    });
+    console.error("listInvoiceBackups error:", err);
+    res.status(500).json({ message: "Could not load invoice backups", details: err.message })
   }
 }
 
