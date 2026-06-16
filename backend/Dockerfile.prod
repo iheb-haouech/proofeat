@@ -26,7 +26,6 @@ COPY --from=builder /app/controllers ./controllers
 COPY --from=builder /app/middleware ./middleware
 COPY --from=builder /app/lib ./lib
 COPY --from=builder /app/utils ./utils
-COPY --from=builder /app/*.traineddata ./ 2>/dev/null || true
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
 EXPOSE 5000
 CMD ["node", "index.js"]
