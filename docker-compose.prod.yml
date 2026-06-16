@@ -16,9 +16,7 @@ services:
     ports: []
 
   ocr:
-    build:
-      context: ./ocr_service
-      dockerfile: Dockerfile
+    image: proofeat-ocr
     restart: unless-stopped
     environment:
       - OCR_WORKERS=2
