@@ -29,6 +29,6 @@ COPY --from=builder /app/lib ./lib
 COPY --from=builder /app/utils ./utils
 COPY entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl && rm -rf /var/lib/apt/lists/*
 EXPOSE 5000
 CMD ["/app/entrypoint.sh"]
