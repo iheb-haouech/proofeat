@@ -19,7 +19,7 @@ ENV NODE_ENV=production
 RUN mkdir -p uploads uploads/profiles processed datasets stock-invoices
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/prisma ./prisma
-COPY --from=builder /app/prismaClient.js ./prismaClient.js || true
+COPY --from=builder /app/prismaClient.js ./prismaClient.js
 COPY --from=builder /app/index.js ./index.js
 COPY --from=builder /app/routes ./routes
 COPY --from=builder /app/controllers ./controllers
