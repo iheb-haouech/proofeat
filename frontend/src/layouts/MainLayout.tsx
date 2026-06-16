@@ -1,10 +1,20 @@
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import { useState, useEffect } from "react";
 
 export default function MainLayout() {
   const { user, logout } = useAuth();
   const isAdmin = user?.role === "ADMIN" || user?.role === "SUPERADMIN";
   const isClient = user?.role === "CLIENT";
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth > 860) setSidebarOpen(false);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const displayName = [user?.firstName, user?.lastName].filter(Boolean).join(" ") || user?.name || user?.email || "Utilisateur";
   const welcomeMessage = isAdmin ? `Bienvenue, ${displayName}` : `Bonjour, ${displayName}`;
@@ -20,6 +30,8 @@ export default function MainLayout() {
     fontWeight: 700,
     marginBottom: 8,
   });
+
+  const closeSidebar = () => setSidebarOpen(false);
 
   return (
     <>
@@ -38,10 +50,47 @@ export default function MainLayout() {
           top: 0;
           height: 100vh;
           overflow-y: auto;
+          transition: transform 0.3s ease;
+          z-index: 1000;
+        }
+        .app-sidebar.mobile {
+          position: fixed;
+          left: 0;
+          top: 0;
+          height: 100vh;
+          transform: translateX(${sidebarOpen ? "0" : "-100%"});
+          width: 260px;
         }
         .app-main {
           padding: 20px;
           min-width: 0;
+        }
+        .hamburger {
+          display: none;
+          position: fixed;
+          top: 16px;
+          left: 16px;
+          z-index: 1100;
+          background: #0f172a;
+          border: none;
+          color: #fff;
+          padding: 10px;
+          border-radius: 8px;
+          cursor: pointer;
+          font-size: 20px;
+        }
+        .overlay {
+          display: none;
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0,0,0,0.5);
+          z-index: 900;
+        }
+        .overlay.visible {
+          display: block;
         }
         .user-card {
           display: flex;
@@ -94,6 +143,10 @@ export default function MainLayout() {
           .app-sidebar {
             position: relative;
             height: auto;
+            transform: none !important;
+          }
+          .hamburger {
+            display: block;
           }
           .app-main {
             padding: 12px;
@@ -113,8 +166,31 @@ export default function MainLayout() {
           }
         }
       `}</style>
+      
+      <button className="hamburger" onClick={() => setSidebarOpen(true)} aria-label="Menu">
+        ☰
+      </button>
+      
+      <div className={`overlay ${sidebarOpen ? "visible" : ""}`} onClick={closeSidebar}></div>
+      
       <div className="app-shell">
-        <aside className="app-sidebar">
+        <aside className={`app-sidebar ${window.innerWidth <= 860 ? "mobile" : ""}`}>
+          <button 
+            onClick={closeSidebar}
+            style={{ 
+              display: window.innerWidth <= 860 ? "block" : "none",
+              position: "absolute",
+              top: "12px",
+              right: "12px",
+              background: "none",
+              border: "none",
+              color: "#fff",
+              fontSize: "24px",
+              cursor: "pointer"
+            }}
+          >
+            ×
+          </button>
           <img src="/logo.png" alt="ProofEat" style={{ width: 32, height: 32, objectFit: "contain", marginBottom: 6 }} />
           <div style={{ fontSize: 24, fontWeight: 900, marginBottom: 6 }}>ProofEat</div>
           <div className="user-card">
@@ -127,15 +203,15 @@ export default function MainLayout() {
             </div>
           </div>
           <nav className="app-nav">
-            <NavLink to="/dashboard" style={navItem}>Tableau de bord</NavLink>
-          {isAdmin && <NavLink to="/attendance" style={navItem}>Pointage admin</NavLink>}
-          {isAdmin && <NavLink to="/attendance/history" style={navItem}>Historique pointage</NavLink>}
-          {isAdmin && <NavLink to="/attendance/kiosk" style={navItem}>QR kiosque</NavLink>}
-            {isClient && <NavLink to="/attendance/scan" style={navItem}>Scanner pointage</NavLink>}
-            <NavLink to="/proofcam" style={navItem}>ProofCam</NavLink>
-            <NavLink to="/orders" style={navItem}>Commandes</NavLink>
-            <NavLink to="/inventory" style={navItem}>Inventaire</NavLink>
-            <NavLink to="/profile" style={navItem}>Mon profil</NavLink>
+            <NavLink to="/dashboard" style={navItem} onClick={closeSidebar}>Tableau de bord</NavLink>
+            {isAdmin && <NavLink to="/attendance" style={navItem} onClick={closeSidebar}>Pointage admin</NavLink>}
+            {isAdmin && <NavLink to="/attendance/history" style={navItem} onClick={closeSidebar}>Historique pointage</NavLink>}
+            {isAdmin && <NavLink to="/attendance/kiosk" style={navItem} onClick={closeSidebar}>QR kiosque</NavLink>}
+            {isClient && <NavLink to="/attendance/scan" style={navItem} onClick={closeSidebar}>Scanner pointage</NavLink>}
+            <NavLink to="/proofcam" style={navItem} onClick={closeSidebar}>ProofCam</NavLink>
+            <NavLink to="/orders" style={navItem} onClick={closeSidebar}>Commandes</NavLink>
+            <NavLink to="/inventory" style={navItem} onClick={closeSidebar}>Inventaire</NavLink>
+            <NavLink to="/profile" style={navItem} onClick={closeSidebar}>Mon profil</NavLink>
           </nav>
           <button
             onClick={logout}
