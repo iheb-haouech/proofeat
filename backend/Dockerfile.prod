@@ -12,7 +12,7 @@ COPY package*.json ./
 COPY prisma ./prisma
 RUN npm ci --omit=dev && npx prisma generate
 COPY . .
-RUN npx prisma migrate deploy || true
+COPY entrypoint.sh /app/entrypoint.sh
 
 FROM node:20-slim AS runtime
 WORKDIR /app
@@ -27,6 +27,8 @@ COPY --from=builder /app/controllers ./controllers
 COPY --from=builder /app/middleware ./middleware
 COPY --from=builder /app/lib ./lib
 COPY --from=builder /app/utils ./utils
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
 EXPOSE 5000
-CMD ["node", "index.js"]
+CMD ["/app/entrypoint.sh"]
