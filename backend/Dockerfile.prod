@@ -12,6 +12,7 @@ COPY package*.json ./
 COPY prisma ./prisma
 RUN npm ci --omit=dev && npx prisma generate
 COPY . .
+RUN npx prisma migrate deploy || true
 
 FROM node:20-slim AS runtime
 WORKDIR /app
